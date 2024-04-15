@@ -1,0 +1,38 @@
+# base image
+FROM pelias/baseimage
+
+# downloader apt dependencies
+# note: this is done in one command in order to keep down the size of intermediate containers
+RUN apt-get update && apt-get install -y jq lbzip2 parallel && rm -rf /var/lib/apt/lists/*
+
+# change working dir
+ENV WORKDIR /code/pelias/placeholder
+WORKDIR ${WORKDIR}
+
+# copy package.json first to prevent npm install being rerun when only code changes
+COPY ./package.json ${WORK}
+RUN npm install
+
+# copy code from local checkout
+ADD . ${WORKDIR}
+
+# To use Lambda Web Adapter with docker images, package your web app (http api) in a Dockerfile, and
+# add one line to copy Lambda Web Adapter binary to /opt/extensions inside your container
+# https://github.com/awslabs/aws-lambda-web-adapter
+COPY --chown=root:root --from=public.ecr.aws/awsguru/aws-lambda-adapter:0.8.2 /lambda-adapter /opt/extensions/lambda-adapter
+
+ENV WOF_DIR '/data/whosonfirst/sqlite'
+ENV PLACEHOLDER_DATA '/data/placeholder'
+
+RUN mkdir -p /data/placeholder
+RUN chown pelias /data/placeholder
+
+# While this is faster overall it always causes the resultant Dockerfile to be > 10GB
+# which is the ceiling for Lambda container functions. Maybe I am doing something wrong?
+# COPY ./data/store.sqlite3 /data/placeholder/
+
+RUN curl -s https://data.geocode.earth/placeholder/store.sqlite3.gz | gunzip > /data/placeholder/store.sqlite3
+
+USER pelias
+
+CMD [ "./cmd/server.sh" ]
