@@ -1,0 +1,19 @@
+[Unit]
+Description=SFO Museum Placeholder server
+ConditionPathExists=/usr/local/sfomuseum/placeholder
+After=network.target
+ 
+[Service]
+Type=simple
+User=sfomuseum
+Group=nobody
+LimitNOFILE=1024
+
+Restart=on-failure
+RestartSec=10
+
+WorkingDirectory=/usr/local/sfomuseum/placeholder
+ExecStart=/usr/local/sfomuseum/placeholder/cmd/server.sh
+ 
+[Install]
+WantedBy=multi-user.target
