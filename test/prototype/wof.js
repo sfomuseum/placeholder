@@ -585,7 +585,8 @@ module.exports.isValidWofRecord = function(test, util) {
   });
 
   test( 'superseded', function(t) {
-    t.false( wof.isValidWofRecord( 1, params({ 'wof:superseded_by': [ 'any value' ] }) ) );
+      // t.false( wof.isValidWofRecord( 1, params({ 'wof:superseded_by': [ 'any value' ] }) ) );
+    t.true( wof.isValidWofRecord( 1, params({ 'wof:superseded_by': [ 'any value' ] }) ) );      
     t.end();
   });
 
@@ -596,8 +597,11 @@ module.exports.isValidWofRecord = function(test, util) {
   });
 
   test( 'not current', function(t) {
-    t.false( wof.isValidWofRecord( 1, params({ 'mz:is_current': 0 }) ) );
-    t.false( wof.isValidWofRecord( 1, params({ 'mz:is_current': '0' }) ) );
+      // t.false( wof.isValidWofRecord( 1, params({ 'mz:is_current': 0 }) ) );
+      // t.false( wof.isValidWofRecord( 1, params({ 'mz:is_current': '0' }) ) );
+    t.true( wof.isValidWofRecord( 1, params({ 'mz:is_current': 0 }) ) );
+    t.true( wof.isValidWofRecord( 1, params({ 'mz:is_current': '0' }) ) );
+      
     t.end();
   });
 

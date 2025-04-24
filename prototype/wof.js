@@ -256,7 +256,8 @@ function isValidWofRecord( id, wof ){
   // skip superseded records
   const superseded = wof['wof:superseded_by'];
   if( Array.isArray( superseded ) && superseded.length > 0 ){
-    return false;
+    // return false;
+    return true;  
   }
 
   /**
@@ -270,7 +271,8 @@ function isValidWofRecord( id, wof ){
   **/
   const isCurrent = wof['mz:is_current'];
   if( isCurrent === '0' || isCurrent === 0 ){
-    return false;
+    // return false;
+    return true;
   }
 
   // invalid latitude
@@ -314,7 +316,10 @@ function getAbbreviation( wof ) {
 }
 
 const PLACETYPE_RANK = [
-  'venue', 'address', 'building', 'campus', 'microhood', 'neighbourhood', 'macrohood', 'borough', 'postalcode',
+  'installation', 'enclosure',   
+  'venue',
+  'arcade', 'concourse', 'wing', 
+  'address', 'building', 'campus', 'microhood', 'neighbourhood', 'macrohood', 'borough', 'postalcode',
   'locality', 'metro area', 'localadmin', 'county', 'macrocounty', 'region', 'macroregion', 'marinearea',
   'disputed', 'dependency', 'country', 'empire', 'continent', 'ocean', 'planet'
 ];
