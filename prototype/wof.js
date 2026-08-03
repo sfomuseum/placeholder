@@ -8,6 +8,11 @@ const analysis = require('../lib/analysis');
 const language = dir('../config/language');
 const LOW_POPULATION_THRESHOLD = 2000;
 
+// synthetic property injected by cmd/wof_extract_sqlite.js (see lib/descendantPopulationIndex.js)
+// carrying the highest population found among a record's WOF descendants, since many admin
+// polygons (eg. macrocounties) have no population of their own but clearly aren't obscure.
+const DESCENDANT_POPULATION_PROPERTY = 'placeholder:max_descendant_population';
+
 // list of languages / tags we favour in cases of deduplication
 const LANG_PREFS = ['eng','und'];
 const TAG_PREFS = ['preferred','abbr','label','variant','colloquial'];
@@ -98,17 +103,7 @@ function insertWofRecord( wof, next ){
       }
     }
 
-    // note: skip all `name:*` fields when we suspect that they were sourced from
-    // machine transliteration via WikiData.
-    // see: https://github.com/whosonfirst-data/whosonfirst-data/issues/799
-    const hasDeadOrObscureLanguages = _.has(wof, 'name:vol_x_preferred');
-    const isLowOrUnknownPopulation = _.get(doc, 'population', 0) < LOW_POPULATION_THRESHOLD;
-    const isMegaCity = _.get(doc, 'wof:megacity', 0) === 1;
-    const isCapitalCity = !_.isEmpty(_.get(doc, 'wof:capital_of'));
-    const isLikelyTransliterated = (
-      hasDeadOrObscureLanguages && isLowOrUnknownPopulation && !isMegaCity && !isCapitalCity
-    );
-    if (!isLikelyTransliterated) {
+    if (!isLikelyTransliterated(wof, doc.population)) {
 
       // add 'name:*' fields
       for( var attr in wof ){
@@ -302,6 +297,25 @@ function getPopulation( wof ) {
   else if( wof['ne:pop_est'] ){             return wof['ne:pop_est']; }
 }
 
+// note: skip all `name:*` fields when we suspect that they were sourced from
+// machine transliteration via WikiData.
+// see: https://github.com/whosonfirst-data/whosonfirst-data/issues/799
+//
+// `populationSelf` is the record's own population (as computed by getPopulation).
+// Many admin polygons (eg. macrocounties) carry no population of their own, so we
+// also allow the record's `placeholder:max_descendant_population` property (see
+// lib/descendantPopulationIndex.js) - the highest population found among its WOF
+// descendants - to rescue it from being treated as obscure.
+function isLikelyTransliterated( wof, populationSelf ) {
+  const hasDeadOrObscureLanguages = _.has(wof, 'name:vol_x_preferred');
+  const isLowOrUnknownPopulation =
+    _.toInteger(populationSelf) < LOW_POPULATION_THRESHOLD &&
+    _.toInteger(wof[DESCENDANT_POPULATION_PROPERTY]) < LOW_POPULATION_THRESHOLD;
+  const isMegaCity = _.get(wof, 'wof:megacity', 0) === 1;
+  const isCapitalCity = !_.isEmpty(_.get(wof, 'wof:capital_of'));
+  return hasDeadOrObscureLanguages && isLowOrUnknownPopulation && !isMegaCity && !isCapitalCity;
+}
+
 // abbreviations and ISO codes
 // logic copied from: pelias/whosonfirst src/components/extractFields.js (since modified)
 // @todo: wof:abbreviation is deprecated, remove references to it
@@ -345,5 +359,8 @@ function validBoundingBox(bbox) {
 module.exports.insertWofRecord = insertWofRecord;
 module.exports.isValidWofRecord = isValidWofRecord;
 module.exports.getPopulation = getPopulation;
+module.exports.isLikelyTransliterated = isLikelyTransliterated;
 module.exports.getAbbreviation = getAbbreviation;
 module.exports.validBoundingBox = validBoundingBox;
+module.exports.DESCENDANT_POPULATION_PROPERTY = DESCENDANT_POPULATION_PROPERTY;
+module.exports.LOW_POPULATION_THRESHOLD = LOW_POPULATION_THRESHOLD;

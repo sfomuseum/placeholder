@@ -942,6 +942,64 @@ module.exports.add_names = function(test, util) {
     });
   });
 
+  // isLikelyTransliterated: megacity flag (read from the raw wof record, not the
+  // partially-built doc) should rescue names from being dropped
+  test( 'store: do not reject likely-transliterated names for megacities', function(t) {
+    var mock = new Mock();
+    mock.insertWofRecord(params({
+      'name:vol_x_preferred': [ 'Example' ],
+      'name:eng_x_preferred': [ 'Big City' ],
+      'wof:megacity': 1
+    }), function(){
+      t.ok( mock._calls.setTokens[0][1].length > 0 );
+      t.end();
+    });
+  });
+
+  // isLikelyTransliterated: capital_of flag (read from the raw wof record, not the
+  // partially-built doc) should rescue names from being dropped
+  test( 'store: do not reject likely-transliterated names for capital cities', function(t) {
+    var mock = new Mock();
+    mock.insertWofRecord(params({
+      'name:vol_x_preferred': [ 'Example' ],
+      'name:eng_x_preferred': [ 'Capital City' ],
+      'wof:capital_of': [ 123 ]
+    }), function(){
+      t.ok( mock._calls.setTokens[0][1].length > 0 );
+      t.end();
+    });
+  });
+
+  // isLikelyTransliterated: a record with no population of its own (eg. a
+  // macrocounty) should still keep its names if a populous descendant was
+  // found by the pre-pass and attached via the synthetic property
+  test( 'store: do not reject likely-transliterated names when a populous descendant exists', function(t) {
+    var mock = new Mock();
+    mock.insertWofRecord(params({
+      'wof:placetype': 'macrocounty',
+      'name:vol_x_preferred': [ 'Example' ],
+      'name:eng_x_preferred': [ 'Greater London' ],
+      'placeholder:max_descendant_population': 7556900
+    }), function(){
+      t.ok( mock._calls.setTokens[0][1].length > 0 );
+      t.end();
+    });
+  });
+
+  // isLikelyTransliterated: a small descendant population should not rescue the record
+  test( 'store: reject likely-transliterated names when descendant population is also low', function(t) {
+    var mock = new Mock();
+    mock.insertWofRecord(params({
+      'wof:placetype': 'macrocounty',
+      'name:vol_x_preferred': [ 'Example' ],
+      'name:eng_x_preferred': [ 'Nowhereshire' ],
+      'placeholder:max_descendant_population': 1999
+    }), function(){
+      t.deepEqual( mock._calls.setTokens, [[ 1, [] ]] );
+      t.end();
+    });
+  });
+
   // do not store tokens for the 'empire' placetype
   test( 'empire tokens excluded', function(t) {
     var mock = new Mock();

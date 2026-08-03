@@ -10,6 +10,7 @@ var tests = [
   './lib/DocStore',
   './lib/TokenIndex',
   './lib/Result',
+  './lib/descendantPopulationIndex',
   './prototype/wof',
   './prototype/io',
   './prototype/tokenize',
